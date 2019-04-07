@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html>
+<head lang="zh-CN">
+    <meta content="webkit" name="renderer" />
+    <meta charset="UTF-8">
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="../icheck-1.x/skins/square/_all.css" rel="stylesheet">
+    <title>IP地址聚合 v6.0</title>
+</head>
+<style>
+    .table_main {
+        border-collapse: collapse;
+        box-shadow: 8px 8px 5px #888888;
+        margin: 10px auto;
+        }
+
+    .table_head {
+        border-collapse: collapse;
+        margin: 10px auto;
+        height: 100%;
+        width:  900px;
+        padding: 0;
+        /*vertical-align: bottom;*/
+        }
+
+    .fillArea_ip {
+        height: 100%;
+        width: 100%;
+        padding: 0;
+        vertical-align: bottom;
+    }
+
+</style>
+<script>
+    /*
+    Author:     Roger
+    Feature:    IP地址聚合
+    Time:       2019-04-07
+    Version:    v6.0
+    What's New: 修正主机地址在模式切换时丢失数据的bug
+
+    Time:       2018-08-29
+    Version:    v5.0
+    What's New: 支持ipv6
+
+    Time:       2018-08-24
+    Version:    v4.2
+    What's New: 显示格式不正确的条目
+
+    Time:       2018-08-24
+    Version:    v4.1
+    What's New：实时显示匹配到的ip条目数
+
+    Time:       2018-08-23
+    Version:    v4.0
+    What's New：多种网络地址格式宽松输入、模式间切换
+
+    Time:       2018-08-22
+    Version:    v3.0
+    What's New：后缀模式宽松输入
+
+    Time:       2018-08-21
+    Version:    v2.0
+    What's New：BootStrap、等待动画、POST、JSON
+    */
+ 
+    var netmaskdic = new Array();
+    netmaskdic["0.0.0.0"]="/0";
+    netmaskdic["128.0.0.0"]="/1";
+    netmaskdic["192.0.0.0"]="/2";
+    netmaskdic["224.0.0.0"]="/3";
+    netmaskdic["240.0.0.0"]="/4";
+    netmaskdic["248.0.0.0"]="/5";
+    netmaskdic["252.0.0.0"]="/6";
+    netmaskdic["254.0.0.0"]="/7";
+    netmaskdic["255.0.0.0"]="/8";
+    netmaskdic["255.128.0.0"]="/9";
+    netmaskdic["255.192.0.0"]="/10";
+    netmaskdic["255.224.0.0"]="/11";
+    netmaskdic["255.240.0.0"]="/12";
+    netmaskdic["255.248.0.0"]="/13";
+    netmaskdic["255.252.0.0"]="/14";
+    netmaskdic["255.254.0.0"]="/15";
+    netmaskdic["255.255.0.0"]="/16";
+    netmaskdic["255.255.128.0"]="/17";
+    netmaskdic["255.255.192.0"]="/18";
+    netmaskdic["255.255.224.0"]="/19";
+    netmaskdic["255.255.240.0"]="/20";
+    netmaskdic["255.255.248.0"]="/21";
+    netmaskdic["255.255.252.0"]="/22";
+    netmaskdic["255.255.254.0"]="/23";
+    netmaskdic["255.255.255.0"]="/24";
+    netmaskdic["255.255.255.128"]="/25";
+    netmaskdic["255.255.255.192"]="/26";
+    netmaskdic["255.255.255.224"]="/27";
+    netmaskdic["255.255.255.240"]="/28";
+    netmaskdic["255.255.255.248"]="/29";
+    netmaskdic["255.255.255.252"]="/30";
+    netmaskdic["255.255.255.254"]="/31";
+    netmaskdic["255.255.255.255"]="/32";
+
+    var netmaskdic_reverse = new Array();
+    netmaskdic_reverse["255.255.255.255"]="/0";
+    netmaskdic_reverse["127.255.255.255"]="/1";
+    netmaskdic_reverse["63.255.255.255"]="/2";
+    netmaskdic_reverse["31.255.255.255"]="/3";
+    netmaskdic_reverse["15.255.255.255"]="/4";
+    netmaskdic_reverse["7.255.255.255"]="/5";
+    netmaskdic_reverse["3.255.255.255"]="/6";
+    netmaskdic_reverse["1.255.255.255"]="/7";
+    netmaskdic_reverse["0.255.255.255"]="/8";
+    netmaskdic_reverse["0.127.255.255"]="/9";
+    netmaskdic_reverse["0.63.255.255"]="/10";
+    netmaskdic_reverse["0.31.255.255"]="/11";
+    netmaskdic_reverse["0.15.255.255"]="/12";
+    netmaskdic_reverse["0.7.255.255"]="/13";
+    netmaskdic_reverse["0.3.255.255"]="/14";
+    netmaskdic_reverse["0.1.255.255"]="/15";
+    netmaskdic_reverse["0.0.255.255"]="/16";
+    netmaskdic_reverse["0.0.127.255"]="/17";
+    netmaskdic_reverse["0.0.63.255"]="/18";
+    netmaskdic_reverse["0.0.31.255"]="/19";
+    netmaskdic_reverse["0.0.15.255"]="/20";
+    netmaskdic_reverse["0.0.7.255"]="/21";
+    netmaskdic_reverse["0.0.3.255"]="/22";
+    netmaskdic_reverse["0.0.1.255"]="/23";
+    netmaskdic_reverse["0.0.0.255"]="/24";
+    netmaskdic_reverse["0.0.0.127"]="/25";
+    netmaskdic_reverse["0.0.0.63"]="/26";
+    netmaskdic_reverse["0.0.0.31"]="/27";
+    netmaskdic_reverse["0.0.0.15"]="/28";
+    netmaskdic_reverse["0.0.0.7"]="/29";
+    netmaskdic_reverse["0.0.0.3"]="/30";
+    netmaskdic_reverse["0.0.0.1"]="/31";
+    netmaskdic_reverse["0.0.0.0"]="/32";
+
+    //后缀模式到掩码模式的转换
+    var netmaskdicopt2 = new Array();
+    netmaskdicopt2["0"]="0.0.0.0";
+    netmaskdicopt2["1"]="128.0.0.0";
+    netmaskdicopt2["2"]="192.0.0.0";
+    netmaskdicopt2["3"]="224.0.0.0";
+    netmaskdicopt2["4"]="240.0.0.0";
+    netmaskdicopt2["5"]="248.0.0.0";
+    netmaskdicopt2["6"]="252.0.0.0";
+    netmaskdicopt2["7"]="254.0.0.0";
+    netmaskdicopt2["8"]="255.0.0.0";
+    netmaskdicopt2["9"]="255.128.0.0";
+    netmaskdicopt2["10"]="255.192.0.0";
+    netmaskdicopt2["11"]="255.224.0.0";
+    netmaskdicopt2["12"]="255.240.0.0";
+    netmaskdicopt2["13"]="255.248.0.0";
+    netmaskdicopt2["14"]="255.252.0.0";
+    netmaskdicopt2["15"]="255.254.0.0";
+    netmaskdicopt2["16"]="255.255.0.0";
+    netmaskdicopt2["17"]="255.255.128.0";
+    netmaskdicopt2["18"]="255.255.192.0";
+    netmaskdicopt2["19"]="255.255.224.0";
+    netmaskdicopt2["20"]="255.255.240.0";
+    netmaskdicopt2["21"]="255.255.248.0";
+    netmaskdicopt2["22"]="255.255.252.0";
+    netmaskdicopt2["23"]="255.255.254.0";
+    netmaskdicopt2["24"]="255.255.255.0";
+    netmaskdicopt2["25"]="255.255.255.128";
+    netmaskdicopt2["26"]="255.255.255.192";
+    netmaskdicopt2["27"]="255.255.255.224";
+    netmaskdicopt2["28"]="255.255.255.240";
+    netmaskdicopt2["29"]="255.255.255.248";
+    netmaskdicopt2["30"]="255.255.255.252";
+    netmaskdicopt2["31"]="255.255.255.254";
+    netmaskdicopt2["32"]="255.255.255.255";
+
+    //后缀模式到反掩码模式的转换
+    var netmaskdicopt3 = new Array();
+    netmaskdicopt3["0"]="255.255.255.255";
+    netmaskdicopt3["1"]="127.255.255.255";
+    netmaskdicopt3["2"]="63.255.255.255";
+    netmaskdicopt3["3"]="31.255.255.255";
+    netmaskdicopt3["4"]="15.255.255.255";
+    netmaskdicopt3["5"]="7.255.255.255";
+    netmaskdicopt3["6"]="3.255.255.255";
+    netmaskdicopt3["7"]="1.255.255.255";
+    netmaskdicopt3["8"]="0.255.255.255";
+    netmaskdicopt3["9"]="0.127.255.255";
+    netmaskdicopt3["10"]="0.63.255.255";
+    netmaskdicopt3["11"]="0.31.255.255";
+    netmaskdicopt3["12"]="0.15.255.255";
+    netmaskdicopt3["13"]="0.7.255.255";
+    netmaskdicopt3["14"]="0.3.255.255";
+    netmaskdicopt3["15"]="0.1.255.255";
+    netmaskdicopt3["16"]="0.0.255.255";
+    netmaskdicopt3["17"]="0.0.127.255";
+    netmaskdicopt3["18"]="0.0.63.255";
+    netmaskdicopt3["19"]="0.0.31.255";
+    netmaskdicopt3["20"]="0.0.15.255";
+    netmaskdicopt3["21"]="0.0.7.255";
+    netmaskdicopt3["22"]="0.0.3.255";
+    netmaskdicopt3["23"]="0.0.1.255";
+    netmaskdicopt3["24"]="0.0.0.255";
+    netmaskdicopt3["25"]="0.0.0.127";
+    netmaskdicopt3["26"]="0.0.0.63";
+    netmaskdicopt3["27"]="0.0.0.31";
+    netmaskdicopt3["28"]="0.0.0.15";
+    netmaskdicopt3["29"]="0.0.0.7";
+    netmaskdicopt3["30"]="0.0.0.3";
+    netmaskdicopt3["31"]="0.0.0.1";
+    netmaskdicopt3["32"]="0.0.0.0";
+
+    var ip_mode = 'ipv4';
+
+function ajax(PostData){
+    return new Promise(function (resolve, reject) {
+        var req = new XMLHttpRequest();
+        req.open('POST', '../cgi-bin/juhe.py', true);
+        req.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+        req.onload = function () {
+            if (req.status === 200) {
+                resolve(req.responseText);
+            }
+            else {
+                reject(" --> Error."+ req.statusText);
+            }
+        };
+        req.onerror = function () {
+                reject(" --> Error."+ req.statusText);
+        };
+        req.send('IPS='+PostData);
+    });
+}
+
+function getUrl(){
+    var srcip_tt = $("#idsrcip_tt");
+    var dstip_tt = $("#iddstip_tt");
+    var span_foot = $("#idspan")[0];
+
+    dstip_tt.val("");
+    //默认返回后缀模式
+    $('#idDstOption1').iCheck('check');
+
+    span_foot.innerHTML = `聚合前条目数:<span class="text-danger">0</span>,&nbsp;&nbsp;聚合后条目数:<span class="text-danger">0</span>,&nbsp;&nbsp;耗时:<span class="text-danger">0.0000s</span>&nbsp;&nbsp;`;
+    $("#loadingModal").modal({backdrop: 'static', keyboard: false});
+
+    //整理textarea中的数据，转换为后缀模式并提交
+    //取输入模式
+    let src_mode_last = $('.src_mode:checked').val();
+    let reg_pattern = '';
+    let ips_withoutspace = [];
+
+    //如果当前是ipv6模式
+    if(ip_mode === 'ipv6'){
+        //ipv6模式下，按行提取ip
+        //按行分割
+        let ips = srcip_tt.val().split(/\n+/);
+        //去掉空白行
+        ips = ips.filter(item => {
+            item = item.replace(/(^\s*)|(\s*$)/gm, "");
+            return item != '';
+        });
+        //去掉行首 行尾的空格
+        ips_withoutspace = [];
+        ips.forEach(element => {
+            ips_withoutspace.push(element.replace(/(^\s*)|(\s*$)/gm, ""));
+        });
+    }
+    //以下是ipv4模式，可以在3种输入模式下切换
+    else{
+        switch(src_mode_last){
+            case 'option1':
+                reg_pattern = new RegExp(/(\d{1,}\.\d{1,}\.\d{1,}\.\d{1,}\/\d{1,})|(\d{1,}\.\d{1,}\.\d{1,}\.\d{1,})/g);
+                ips_withoutspace = [];
+                while ((temp = reg_pattern.exec(srcip_tt.val())) != null){
+                    ips_withoutspace.push(temp[0]);
+                }
+            break;
+            case 'option2':
+                reg_pattern = new RegExp(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g);
+                ips_withoutspace = [];
+                //转换成后缀模式备用
+                while ((temp = reg_pattern.exec(srcip_tt.val())) != null){
+                    ips_withoutspace.push (`${temp[1]}${netmaskdic[temp[2]]}`);
+                }
+            break;
+            case 'option3':
+                reg_pattern = new RegExp(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g);
+                ips_withoutspace = [];
+                //转换成后缀模式备用
+                while ((temp=reg_pattern.exec(srcip_tt.val())) != null){
+                    ips_withoutspace.push (`${temp[1]}${netmaskdic_reverse[temp[2]]}`);
+                }
+            break;
+        }
+    }
+
+    //ips_withoutspace.forEach(item => {
+    //    console.log(item);
+    //});
+
+    var postData = JSON.stringify(ips_withoutspace);
+    //console.log(postData);
+
+    ajax(postData).then(function onFulfilled(value){
+        //解码JSON结果
+        result = $.parseJSON(value);
+        var result_ips = result['ips'];
+        
+        dstip_tt.val(result_ips.join('\n'));
+
+        span_foot.innerHTML = `聚合前条目数:<span class="text-danger">${result['process_before']}</span>,&nbsp;&nbsp;聚合后条目数:<span class="text-danger">${result['process_after']}</span>,&nbsp;&nbsp;耗时:<span class="text-danger">${result['elapsed']}</span>&nbsp;&nbsp;`;
+        $('#loadingModal').modal('hide');
+    }).catch(function onRejected(error){
+        dstip_tt.val(dstip_tt.val() + "\n" + error + "\n");
+        $('#loadingModal').modal('hide');
+    });
+}
+
+function transform_mode(optionA, optionB, output_area){
+    let reg_pattern = '';
+    let srcip_tt = $("#idsrcip_tt");
+    let dstip_tt = $("#iddstip_tt");
+    let ips = [];
+
+    //确定转换前的模式
+    switch(optionA){
+        case 'option1':
+            reg_pattern = new RegExp(/(\d{1,}\.\d{1,}\.\d{1,}\.\d{1,}\/\d{1,})|(\d{1,}\.\d{1,}\.\d{1,}\.\d{1,})/g);
+            ips = [];
+            switch(output_area){
+                case 'output_src':
+                    while ((temp=reg_pattern.exec(srcip_tt.val())) != null){
+                        if(temp[0].indexOf('/')!=-1){
+                            ips.push(temp[0]);
+                        }
+                        else{
+                            ips.push(`${temp[0]}/32`);
+                        }
+                    }
+                break;
+                case 'output_dst':
+                    while ((temp=reg_pattern.exec(dstip_tt.val())) != null){
+                        ips.push(temp[0]);
+                    }
+                break;
+            }
+        break;
+        case 'option2':
+            reg_pattern = new RegExp(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g);
+            //转换成后缀模式备用
+            ips = [];
+            switch(output_area){
+                case 'output_src':
+                    while ((temp=reg_pattern.exec(srcip_tt.val())) != null){
+                        ips.push (`${temp[1]}${netmaskdic[temp[2]]}`);
+                    }
+                break;
+                case 'output_dst':
+                    while ((temp=reg_pattern.exec(dstip_tt.val())) != null){
+                        ips.push (`${temp[1]}${netmaskdic[temp[2]]}`);
+                    }
+                break;
+            }
+        break;
+        case 'option3':    //反掩码
+            reg_pattern = new RegExp(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g);
+            //转换成后缀模式备用
+            ips = [];
+            switch(output_area){
+                case 'output_src':
+                    while ((temp=reg_pattern.exec(srcip_tt.val())) != null){
+                        ips.push (`${temp[1]}${netmaskdic_reverse[temp[2]]}`);
+                    }
+                break;
+                case 'output_dst':
+                    while ((temp=reg_pattern.exec(dstip_tt.val())) != null){
+                        ips.push (`${temp[1]}${netmaskdic_reverse[temp[2]]}`);
+                    }
+                break;
+            }
+            break;
+    }
+
+    //检查提取的结果
+    //ips.forEach(item=>{
+    //    console.log(item);
+    //});
+
+    //根据optionB，按不同的格式输出
+    switch(optionB){
+        case 'option1':    //后缀模式
+            switch(output_area){
+                case 'output_src':
+                    srcip_tt.val(ips.join('\n'));
+                break;
+                case 'output_dst':
+                    dstip_tt.val(ips.join('\n'));
+                break;
+            }
+        break;
+        case 'option2':
+        reg_pattern = new RegExp(/(\d{1,}\.\d{1,}\.\d{1,}\.\d{1,})\/(\d{1,})|(\d{1,}\.\d{1,}\.\d{1,}\.\d{1,})/g);
+            result = [];
+            ips.forEach(item=>{
+                while ((temp = reg_pattern.exec(item)) != null){
+                    if(temp[0].indexOf('/')!=-1){
+                        result.push(`${temp[1]} ${netmaskdicopt2[temp[2]]}`);
+                    }
+                    else{
+                        result.push(`${temp[0]} ${netmaskdicopt2[32]}`);
+                    }
+                }
+            });
+            switch(output_area){
+                case 'output_src':
+                    srcip_tt.val(result.join('\n'));
+                break;
+                case 'output_dst':
+                    dstip_tt.val(result.join('\n'));
+                break;
+            }
+        break;
+        case 'option3':
+            reg_pattern = new RegExp(/(\d{1,}\.\d{1,}\.\d{1,}\.\d{1,})\/(\d{1,})/g);
+            result = [];
+            ips.forEach(item=>{
+                while ((temp = reg_pattern.exec(item)) != null){
+                    result.push(`${temp[1]} ${netmaskdicopt3[temp[2]]}`);
+                }
+            });
+            switch(output_area){
+                case 'output_src':
+                    srcip_tt.val(result.join('\n'));
+                break;
+                case 'output_dst':
+                    dstip_tt.val(result.join('\n'));
+                break;
+            }
+        break;
+    }
+}
+
+function ipvxclick(that){
+    //console.log(`ip_mode = ${ip_mode}`);
+    if(that.id === 'idipv4'){
+        ip_mode = 'ipv4';
+
+        $('#idipv4').attr('class', 'btn btn-success btn-sm');
+        $('#idipv6').attr('class', 'btn btn-default btn-sm');
+
+        $('input').iCheck('enable');
+    }
+    else{
+        //如果是ipv6模式
+        ip_mode = 'ipv6';
+
+        $('#idipv6').attr('class', 'btn btn-success btn-sm');
+        $('#idipv4').attr('class', 'btn btn-default btn-sm');
+
+        $('#idSrcOption1').iCheck('check');
+        $('#idDstOption1').iCheck('check');
+
+        //只保留后缀模式有效，其他模式禁用
+        $('input').iCheck('disable');
+    }
+}
+
+</script>
+
+<body style='text-align:center'>
+    <h3 align="center">IP地址聚合 v6.0</h3>
+
+    <div align="center" class="btn-group" role="group" aria-label="...">
+        <button type="button" class="btn btn-success btn-sm" id="idipv4" onclick="ipvxclick(this)">IPv4</button>
+        <button type="button" class="btn btn-default btn-sm" id="idipv6" onclick="ipvxclick(this)">IPv6</button>
+    </div>
+
+    <table class="table_head">
+        <tr>
+            <td align="left">
+                <form role="form">
+                    <div class="form-group">
+                        <label class="radio-inline">
+                        <input class="src_mode" type="radio" value="option1" name="src_netmask_mode" id="idSrcOption1" checked>后缀模式
+                        </label>
+                        <label class="radio-inline">
+                        <input class="src_mode" type="radio" value="option2" name="src_netmask_mode">掩码模式
+                        </label>
+                        <label class="radio-inline">
+                        <input class="src_mode" type="radio" value="option3" name="src_netmask_mode">反掩码模式
+                        </label>
+                    </div>
+                </form>
+            </td>
+            <td align="left" style="width: 410px">
+                <form role="form">
+                    <div class="form-group">
+                        <label class="radio-inline">
+                        <input class="dst_mode" type="radio"  value="option1" name="dst_netmask_mode" id="idDstOption1" checked>后缀模式
+                        </label>
+                        <label class="radio-inline">
+                        <input class="dst_mode" type="radio"  value="option2" name="dst_netmask_mode">掩码模式
+                        </label>
+                        <label class="radio-inline">
+                        <input class="dst_mode" type="radio"  value="option3" name="dst_netmask_mode">反掩码模式&nbsp;&nbsp;
+                        </label>
+                    </div>
+                </form>
+            </td>
+        </tr>
+    </table>
+    <table class="table_main">
+        <tr>
+            <td style="height:680px;width:380px;">
+                <textarea id="idsrcip_tt" class="fillArea_ip" placeholder="需要处理的ip"></textarea>
+            </td>
+            <td>
+                <button id="idbutton" class="btn btn-success" onclick="getUrl()">开始聚合&nbsp;<i class="fa fa-hand-o-right fa-lg"></i></button>
+            </td>
+            <td style="height:680px;width:380px;">
+                <textarea id="iddstip_tt" class="fillArea_ip" placeholder="结果输出区域"></textarea>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="1" align="right">
+                    <span id="idspan_src">匹配到<span class="text-danger">&nbsp;0&nbsp;</span>个ip条目&nbsp;&nbsp;</span>
+            </td>
+            <td colspan="2" align="right">
+                <span id="idspan">聚合前条目数:<span class="text-danger">0</span>,&nbsp;&nbsp;聚合后条目数:<span class="text-danger">0</span>,&nbsp;&nbsp;耗时:<span class="text-danger">0.0000s</span>&nbsp;&nbsp;</span>
+            </td>
+        </tr>
+    </table>
+   
+    <div class="modal fade" id="loadingModal">
+        <div style="width: 200px;height:20px; z-index: 20000; position: absolute; text-align: center; left: 50%; top: 50%;margin-left:-100px;margin-top:-10px">
+            <div class="progress progress-striped active" style="margin-bottom: 0;">
+                <div class="progress-bar progress-bar-success" style="width: 100%;"></div>
+            </div>
+            <h5 style="color:black"> <strong>正在处理...，请稍等！</strong> </h5>
+        </div>
+    </div>
+
+<script src="../js/jquery-3.3.1.min.js"></script>
+<script src="../js/bootstrap.min.js"></script>
+<script src="../icheck-1.x/icheck.min.js"></script>
+<script>
+    $(document).ready(function(){
+        var src_mode_last = 'option1';
+        var dst_mode_last = 'option1';
+        $('input').iCheck({
+            checkboxClass: 'icheckbox_square-grey',
+            radioClass: 'iradio_square-grey'
+        });
+
+        $('.src_mode').on('ifChecked', function(event){
+            //console.log(`from ${src_mode_last} to ${event.currentTarget.value}`);
+            transform_mode(src_mode_last, event.currentTarget.value, 'output_src');
+            src_mode_last = event.currentTarget.value;
+        });
+
+        $('.dst_mode').on('ifChecked', function(event){
+            //console.log(`from ${dst_mode_last} to ${event.currentTarget.value}`);
+            transform_mode(dst_mode_last, event.currentTarget.value, 'output_dst');
+            dst_mode_last = event.currentTarget.value;
+        });
+
+        //实时获取匹配到的ip条目数
+        $('#idsrcip_tt').bind('input propertychange', function() {
+            var srcip_tt = $("#idsrcip_tt");
+            var span_foot = $("#idspan_src")[0];
+
+            //取输入模式
+            let src_mode_last = $('.src_mode:checked').val();
+            let reg_pattern = '';
+            let ips_withoutspace = [];
+
+            if(ip_mode === 'ipv6'){
+                //ipv6模式下，按行提取ip
+                //按行分割
+                let ips = srcip_tt.val().split(/\n+/);
+                //去掉空白行
+                ips = ips.filter(item => {
+                    item = item.replace(/(^\s*)|(\s*$)/gm, "");
+                    return item != '';
+                });
+                //去掉行首 行尾的空格
+                ips_withoutspace = [];
+                ips.forEach(element => {
+                    ips_withoutspace.push(element.replace(/(^\s*)|(\s*$)/gm, ""));
+                });
+            }
+            //以下是ipv4模式，可以在3种输入模式下切换
+            else{
+                switch(src_mode_last){
+                    case 'option1':
+                        reg_pattern = new RegExp(/(\d{1,}\.\d{1,}\.\d{1,}\.\d{1,}\/\d{1,})|(\d{1,}\.\d{1,}\.\d{1,}\.\d{1,})/g);
+                        ips_withoutspace = [];
+                        while ((temp = reg_pattern.exec(srcip_tt.val())) != null){
+                            ips_withoutspace.push(temp[0]);
+                        }
+                    break;
+                    case 'option2':
+                        reg_pattern = new RegExp(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g);
+                        ips_withoutspace = [];
+                        //转换成后缀模式备用
+                        while ((temp = reg_pattern.exec(srcip_tt.val())) != null){
+                            ips_withoutspace.push (`${temp[1]}${netmaskdic[temp[2]]}`);
+                        }
+                    break;
+                    case 'option3':
+                        reg_pattern = new RegExp(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) (\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g);
+                        ips_withoutspace = [];
+                        //转换成后缀模式备用
+                        while ((temp=reg_pattern.exec(srcip_tt.val())) != null){
+                            ips_withoutspace.push (`${temp[1]}${netmaskdic_reverse[temp[2]]}`);
+                        }
+                    break;
+                }
+            }
+            if(ips_withoutspace.length <=35000 ) {
+                span_foot.innerHTML = `匹配到<span class="text-danger">&nbsp;${ips_withoutspace.length}&nbsp;</span>个ip条目&nbsp;&nbsp;`; 
+            }
+            else{
+                span_foot.innerHTML = `匹配到<span class="text-danger">&nbsp;${ips_withoutspace.length}&nbsp;</span>个ip条目,&nbsp;超过<span class="text-danger">35000</span>个条目,&nbsp;请尝试分段聚合&nbsp;&nbsp;`; 
+            }
+        });
+
+    });
+</script>
+</body>
+</html>
